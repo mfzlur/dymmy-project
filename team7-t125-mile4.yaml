@@ -1,0 +1,893 @@
+openapi: 3.0.0
+info:
+  title: AI Assisstant & Course Management API
+  version: 1.0.0
+  description: API for AI assistant, managing courses, lectures, bookmarks, notes, assignments, feedback, recommendations, personalised notes and instructor content.
+servers:
+  - url: http://127.0.0.1:5000
+
+paths:
+  /query:
+    post:
+      summary: Query the AI assistant
+      operationId: queryAiAssistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /courses:
+    get:
+      summary: Get all courses
+      operationId: getCourses
+      responses:
+        '200':
+          description: A list of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    assignments:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          week:
+                            type: integer
+                          due_date:
+                            type: string
+                            format: date
+                          submitted:
+                            type: boolean
+                          score:
+                            type: number
+
+  /course/{course_id}:
+    get:
+      summary: Get a specific course by ID
+      operationId: getCourseById
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          description: The ID of the course to retrieve.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Course details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  progress_percentage:
+                    type: number
+                  assignments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Assignment'
+                  lectures:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lecture'
+                  notes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+        '404':
+          description: Course not found
+
+  /lecturebookmarks/{lecture_id}:
+    get:
+      summary: Fetch all bookmarks for a given lecture.
+      operationId: getBookmarksForLecture
+      parameters:
+        - name: lecture_id
+          in: path
+          required: true
+          description: The ID of the lecture to retrieve bookmarks for.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of bookmarks for the lecture.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bookmark'
+        '404':
+          description: Lecture not found
+
+    post:
+      summary: Add a new bookmark to a lecture.
+      operationId: addBookmarkToLecture
+      parameters:
+        - name: lecture_id
+          in: path
+          required: true
+          description: The ID of the lecture to add a bookmark to.
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  format: date-time
+                remarks:
+                  type: string
+
+      responses:
+        '201':
+          description: Bookmark added successfully.
+        '404':
+          description: Lecture not found.
+        '400':
+          description: Timestamp is required.
+
+  /notes/{course_id}:
+    get:
+      summary: Fetch all notes for a given course.
+      operationId: getNotesForCourse
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          description: The ID of the course to retrieve notes for.
+          schema:
+            type: integer
+
+      responses:
+        '200':
+          description: A list of notes for the course.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '404':
+          description : Course not found.
+
+  /ga/{course_id}:
+    get:
+      summary: Get all graded assignments for a course
+      operationId: getGradedAssignments
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of graded assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradedAssignment'
+
+  /ga/{course_id}/{assignment_id}:
+    post:
+      summary: Submit answers for a graded assignment
+      operationId: submitGradedAssignment
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: assignment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      responses:
+        '200':
+          description: Assignment graded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  score:
+                    type: number
+        '400':
+          description: Missing answers data
+        '404':
+          description: Assignment not found
+
+  /programming_assignmnets:
+    get:
+      summary: Get all programming assignments
+      operationId: getProgrammingAssignments
+      responses:
+        '200':
+          description: List of programming assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgrammingAssignment'
+
+  /programming_assignmnet/{prog_assignment_id}:
+    get:
+      summary: Get a specific programming assignment
+      operationId: getProgrammingAssignment
+      parameters:
+        - name: prog_assignment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Programming assignment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgrammingAssignmentDetail'
+        '404':
+          description: Programming assignment not found
+    
+    post:
+      summary: Submit code for evaluation
+      operationId: submitProgrammingAssignment
+      parameters:
+        - name: prog_assignment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Code evaluation results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: boolean
+        '400':
+          description: No code provided or no test cases found
+        '404':
+          description: Programming assignment not found
+
+  /questions:
+    get:
+      summary: Get all questions
+      operationId: getQuestions
+      responses:
+        '200':
+          description: List of all questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+
+  /feedback:
+    get:
+      summary: Get all feedback entries
+      responses:
+        '200':
+          description: List of all feedback entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Feedback'
+    post:
+      summary: Create a new feedback entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackInput'
+      responses:
+        '200':
+          description: Feedback added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: integer
+
+  /feedback/{feedback_id}:
+    get:
+      summary: Get a specific feedback entry
+      parameters:
+        - in: path
+          name: feedback_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Feedback entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+        '404':
+          description: Feedback not found
+    put:
+      summary: Update a feedback entry
+      parameters:
+        - in: path
+          name: feedback_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackInput'
+      responses:
+        '200':
+          description: Feedback updated successfully
+        '404':
+          description: Feedback not found
+    delete:
+      summary: Delete a feedback entry
+      parameters:
+        - in: path
+          name: feedback_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Feedback deleted successfully
+        '404':
+          description: Feedback not found
+
+  /recommendations:
+    get:
+      summary: Get all recommendations
+      responses:
+        '200':
+          description: List of all recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+    post:
+      summary: Create a new recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationInput'
+      responses:
+        '200':
+          description: Recommendation added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: integer
+
+  /recommendations/{recommendation_id}:
+    get:
+      summary: Get a specific recommendation
+      parameters:
+        - in: path
+          name: recommendation_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Recommendation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+        '404':
+          description: Recommendation not found
+    put:
+      summary: Update a recommendation
+      parameters:
+        - in: path
+          name: recommendation_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationInput'
+      responses:
+        '200':
+          description: Recommendation updated successfully
+        '404':
+          description: Recommendation not found
+    delete:
+      summary: Delete a recommendation
+      parameters:
+        - in: path
+          name: recommendation_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Recommendation deleted successfully
+        '404':
+          description: Recommendation not found
+
+  /personalised-notes:
+    get:
+      summary: Get all personalised notes
+      responses:
+        '200':
+          description: List of all personalised notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PersonalisedNote'
+    post:
+      summary: Create a new personalised note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalisedNoteInput'
+      responses:
+        '200':
+          description: Personalised note added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: integer
+
+  /personalised-notes/{note_id}:
+    get:
+      summary: Get a specific personalised note
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Personalised note
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalisedNote'
+        '404':
+          description: Personalised note not found
+    put:
+      summary: Update a personalised note
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalisedNoteInput'
+      responses:
+        '200':
+          description: Personalised note updated successfully
+        '404':
+          description: Personalised note not found
+    delete:
+      summary: Delete a personalised note
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Personalised note deleted successfully
+        '404':
+          description: Personalised note not found
+
+  /content:
+    get:
+      summary: Get all instructor content
+      responses:
+        '200':
+          description: List of all instructor content
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstructorContent'
+    post:
+      summary: Create new instructor content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstructorContentInput'
+      responses:
+        '201':
+          description: Content added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: integer
+
+  /content/{content_id}:
+    get:
+      summary: Get specific instructor content
+      parameters:
+        - in: path
+          name: content_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Instructor content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstructorContent'
+        '404':
+          description: Content not found
+    put:
+      summary: Update instructor content
+      parameters:
+        - in: path
+          name: content_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstructorContentInput'
+      responses:
+        '200':
+          description: Content updated successfully
+        '404':
+          description: Content not found
+    delete:
+      summary: Delete instructor content
+      parameters:
+        - in: path
+          name: content_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Content deleted successfully
+        '404':
+          description: Content not found
+
+components:
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The user's query for the AI assistant
+
+    QueryResponse:
+      type: object
+      required:
+        - response
+      properties:
+        response:
+          type: string
+          description: The AI assistant's response to the query
+    Assignment:
+      type : object 
+      properties :
+        id :
+          type : integer 
+        week :
+          type : integer 
+        due_date :
+          type : string 
+          format : date 
+        submitted :
+          type : boolean 
+        score :
+          type : number 
+
+    Lecture :
+      type : object 
+      properties :
+        id :
+         type : integer 
+        week :
+         type : integer 
+        title :
+         type : string 
+        video_url :
+         type : string 
+        video_embed_code :
+         type : string 
+        transcript_url :
+         type : string 
+        bookmarks :
+         type : array 
+         items :
+           $ref: '#/components/schemas/Bookmark'
+
+    Bookmark :
+       type : object 
+       properties :
+         id :
+           type : integer 
+         timestamp :
+           type : string 
+           format : date-time 
+         remarks :
+           type : string 
+
+    Note :
+       type : object 
+       properties :
+         id :
+           type : integer 
+         course_id :
+           type : integer 
+         week :
+           type : integer 
+         title :
+           type : string 
+         content :
+           type : string 
+
+    GradedAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        week:
+          type: integer
+        due_date:
+          type: string
+          format: date
+        submitted:
+          type: boolean
+        score:
+          type: number
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    ProgrammingAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        course_id:
+          type: integer
+        week_id:
+          type: integer
+        question:
+          type: string
+
+    ProgrammingAssignmentDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProgrammingAssignment'
+        - type: object
+          properties:
+            test_cases:
+              type: array
+              items:
+                type: object
+                properties:
+                  input:
+                    type: array
+                    items: {}
+                  output: {}
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correct_answer:
+          type: integer
+        user_answer:
+          type: integer
+        week:
+          type: integer
+
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        comment:
+          type: string
+        attachments:
+          type: string
+
+    FeedbackInput:
+      type: object
+      properties:
+        title:
+          type: string
+        comment:
+          type: string
+        attachments:
+          type: string
+
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+
+    RecommendationInput:
+      type: object
+      properties:
+        content:
+          type: string
+
+    PersonalisedNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+
+    PersonalisedNoteInput:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+
+    InstructorContent:
+      type: object
+      properties:
+        id:
+          type: integer
+        difficult_topics:
+          type: string
+        most_frequent_doubts:
+          type: string
+        average_assignment_scores:
+          type: number
+        quiz_completion_rates:
+          type: number
+        avg_lecture_watch_time_percentage:
+          type: number
+
+    InstructorContentInput:
+      type: object
+      properties:
+        difficult_topics:
+          type: string
+        most_frequent_doubts:
+          type: string
+        average_assignment_scores:
+          type: number
+        quiz_completion_rates:
+          type: number
+        avg_lecture_watch_time_percentage:
+          type: number
